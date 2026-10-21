@@ -2,15 +2,8 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: notes-backend
-  labels:
-    app: notes-backend
 spec:
   replicas: 2
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   selector:
     matchLabels:
       app: notes-backend
@@ -28,9 +21,22 @@ spec:
           envFrom:
             - configMapRef:
                 name: backend-config
-            - secretRef:
-                name: postgres-secret
-          # ── SONDA DE DISPONIBILIDAD (READINESS PROBE) ─────────────────────
+          env:
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
           readinessProbe:
             httpGet:
               path: /health
@@ -38,7 +44,6 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 5
             failureThreshold: 3
-          # ── SONDA DE VITALIDAD (LIVENESS PROBE) ───────────────────────────
           livenessProbe:
             httpGet:
               path: /health
